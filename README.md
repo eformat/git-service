@@ -10,4 +10,3 @@ export GIT_PASSWORD=<password>
 
 mvn quarkus:dev
 ```
-
