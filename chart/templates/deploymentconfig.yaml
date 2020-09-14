@@ -38,17 +38,17 @@ spec:
               valueFrom:
                 secretKeyRef:
                   key: GIT_URL
-                  name: git-url
+                  name: git-service
             - name: GIT_USERNAME
               valueFrom:
                 secretKeyRef:
                   key: GIT_USERNAME
-                  name: git-username
+                  name: git-service
             - name: GIT_PASSWORD
               valueFrom:
                 secretKeyRef:
                   key: GIT_PASSWORD
-                  name: git-password
+                  name: git-service
             - name: QUARKUS_PROFILE
               value: prod
           image: ''
