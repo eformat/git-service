@@ -1,0 +1,9 @@
+route: true
+deploymentConfig: true
+replicas:
+  min: 1
+  max: 10
+image_repository: quay.io
+image_name: git-service
+image_namespace: eformat
+image_version: latest

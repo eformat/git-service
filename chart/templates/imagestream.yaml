@@ -1,0 +1,17 @@
+---
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: {{ include "git-service.fullname" . }}
+  labels:
+    {{- include "git-service.labels" . | nindent 4 }}
+  creationTimestamp: null
+spec:
+  tags:
+    - annotations:
+        openshift.io/imported-from: eformat/git-service
+      from:
+        kind: DockerImage
+        name: {{ .Values.image_repository }}/{{ .Values.image_namespace }}/{{ .Values.image_name }}:{{ .Values.image_version }}
+      importPolicy: {}
+      name: {{ .Values.image_version }}

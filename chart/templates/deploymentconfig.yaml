@@ -1,0 +1,82 @@
+{{- if .Values.deploymentConfig }}
+---
+apiVersion: apps.openshift.io/v1
+kind: DeploymentConfig
+metadata:
+  name: {{ include "git-service.fullname" . }}
+  labels:
+    {{- include "git-service.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicas.min }}
+  revisionHistoryLimit: 10
+  selector:
+    {{- include "git-service.selectorLabels" . | nindent 4 }}
+  strategy:
+    activeDeadlineSeconds: 21600
+    resources: {}
+    rollingParams:
+      intervalSeconds: 1
+      maxSurge: 25%
+      maxUnavailable: 25%
+      timeoutSeconds: 600
+      updatePeriodSeconds: 1
+    type: Rolling
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/path: '/metrics'
+        prometheus.io/port: '8080'
+        rollme: {{ randAlphaNum 5 | quote }}
+      creationTimestamp: null
+      labels:
+        {{- include "git-service.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - env:
+            - name: GIT_URL
+              valueFrom:
+                secretKeyRef:
+                  key: GIT_URL
+                  name: git-url
+            - name: GIT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  key: GIT_USERNAME
+                  name: git-username
+            - name: GIT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: GIT_PASSWORD
+                  name: git-password
+            - name: QUARKUS_PROFILE
+              value: prod
+          image: ''
+          imagePullPolicy: Always
+          name: {{ include "git-service.name" . }}
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+            - containerPort: 8443
+              protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+  test: false
+  triggers:
+    - type: ConfigChange
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+          - {{ include "git-service.name" . }}
+        from:
+          kind: ImageStreamTag
+          name: {{ include "git-service.fullname" . }}:{{ .Values.image_version }}
+        lastTriggeredImage: ""
+      type: ImageChange
+{{- end }}
