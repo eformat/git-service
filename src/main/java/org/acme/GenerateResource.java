@@ -4,9 +4,11 @@ import io.vertx.core.json.JsonObject;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.errors.ConfigInvalidException;
 import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.transport.*;
+import org.eclipse.jgit.util.SystemReader;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,6 +59,11 @@ public class GenerateResource {
         Files.delete(localPath.toPath());
 
         CredentialsProvider cp = new UsernamePasswordCredentialsProvider(gitUser, gitPassword);
+        try {
+            SystemReader.getInstance().getUserConfig().clear();
+        } catch (ConfigInvalidException e) {
+            e.printStackTrace();
+        }
 
         try (Git git = Git.cloneRepository()
                 .setURI(gitRepo)
