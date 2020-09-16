@@ -24,7 +24,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
-import java.util.Random;
+import java.security.SecureRandom;
 
 @Path("/v1/api")
 public class GenerateResource {
@@ -92,16 +92,13 @@ public class GenerateResource {
             config.save();
 
             File myFile = new File(git.getRepository().getDirectory().getParent(), "openapi-spec.json");
-            FileWriter fileWriter = null;
-            PrintWriter printWriter = null;
-            try {
-                fileWriter = new FileWriter(myFile);
-                printWriter = new PrintWriter(fileWriter);
-                printWriter.print(specification);
-            } finally {
-                printWriter.close();
-                fileWriter.close();
-            }
+
+            FileWriter fileWriter = new FileWriter(myFile);
+            PrintWriter printWriter = new PrintWriter(fileWriter);
+            printWriter.print(specification);
+            printWriter.close();
+            fileWriter.close();
+
             git.add().addFilepattern("openapi-spec.json").call();
             RevCommit commit = git.commit().setMessage("\uD83E\uDDA9 Initial commit \uD83E\uDDA9").call();
             log.info("Committed: {}", commit.getId());
@@ -116,10 +113,10 @@ public class GenerateResource {
         String alpha = "0123456789"
                 + "abcdefghijklmnopqrstuvxyz";
         StringBuilder sb = new StringBuilder(n);
+        SecureRandom r = new SecureRandom();
         for (int i = 0; i < n; i++) {
             // generate a random number between
             // 0 to alpha variable length
-            Random r = new Random();
             int index
                     = (int) (alpha.length()
                     * r.nextInt());
