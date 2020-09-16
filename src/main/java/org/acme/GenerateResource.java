@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
+import java.util.Random;
 
 @Path("/v1/api")
 public class GenerateResource {
@@ -44,7 +45,7 @@ public class GenerateResource {
     @Produces(MediaType.TEXT_PLAIN)
     @Consumes(MediaType.APPLICATION_JSON)
     public String generate(JsonObject specification) {
-        log.info(specification.toString());
+        log.info("{}", specification);
         try {
             createGitRepo(specification);
         } catch (Exception e) {
@@ -54,7 +55,7 @@ public class GenerateResource {
         return "done";
     }
 
-    protected void createGitRepo(JsonObject specification) throws IOException, IllegalStateException, GitAPIException, URISyntaxException {
+    protected void createGitRepo(JsonObject specification) throws IOException, GitAPIException, URISyntaxException {
         File localPath = File.createTempFile("tempRepo", "");
         Files.delete(localPath.toPath());
 
@@ -62,7 +63,7 @@ public class GenerateResource {
         try {
             SystemReader.getInstance().getUserConfig().clear();
         } catch (ConfigInvalidException e) {
-            e.printStackTrace();
+            log.warn(e.getMessage());
         }
 
         try (Git git = Git.cloneRepository()
@@ -71,10 +72,10 @@ public class GenerateResource {
                 .setCredentialsProvider(cp)
                 .call()) {
 
-            log.info("Cloned master repo: " + git.getRepository().getDirectory());
+            log.info("Cloned master repo: {}", git.getRepository().getDirectory());
 
             final String branchName = "api-spec-" + getAlphaNumericString(4);
-            log.info("Git Branch URL: " + gitRepo.replaceAll(".git", "") + "/src/" + branchName);
+            log.info("Git Branch URL: {}", gitRepo.replaceAll(".git", "") + "/src/" + branchName);
 
             git.checkout()
                     .setCreateBranch(true)
@@ -91,32 +92,38 @@ public class GenerateResource {
             config.save();
 
             File myFile = new File(git.getRepository().getDirectory().getParent(), "openapi-spec.json");
-            FileWriter fileWriter = new FileWriter(myFile);
-            PrintWriter printWriter = new PrintWriter(fileWriter);
-            printWriter.print(specification);
-            printWriter.close();
-
+            FileWriter fileWriter = null;
+            PrintWriter printWriter = null;
+            try {
+                fileWriter = new FileWriter(myFile);
+                printWriter = new PrintWriter(fileWriter);
+                printWriter.print(specification);
+            } finally {
+                printWriter.close();
+                fileWriter.close();
+            }
             git.add().addFilepattern("openapi-spec.json").call();
             RevCommit commit = git.commit().setMessage("\uD83E\uDDA9 Initial commit \uD83E\uDDA9").call();
-            log.info("Committed: " + commit.getId());
+            log.info("Committed: {}", commit.getId());
             git.push().setCredentialsProvider(cp).setRemote("origin").call();
-            log.info("Pushed: " + commit.getId());
+            log.info("Pushed: {}", commit.getId());
         }
 
         FileUtils.deleteDirectory(localPath);
     }
 
     private String getAlphaNumericString(int n) {
-        String AlphaNumericString = "0123456789"
+        String alpha = "0123456789"
                 + "abcdefghijklmnopqrstuvxyz";
         StringBuilder sb = new StringBuilder(n);
         for (int i = 0; i < n; i++) {
             // generate a random number between
-            // 0 to AlphaNumericString variable length
+            // 0 to alpha variable length
+            Random r = new Random();
             int index
-                    = (int) (AlphaNumericString.length()
-                    * Math.random());
-            sb.append(AlphaNumericString
+                    = (int) (alpha.length()
+                    * r.nextInt());
+            sb.append(alpha
                     .charAt(index));
         }
         return sb.toString();
