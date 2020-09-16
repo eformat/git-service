@@ -49,7 +49,7 @@ public class GenerateResource {
         try {
             createGitRepo(specification);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.warn(e.getMessage());
             return "failed";
         }
         return "done";
@@ -92,13 +92,10 @@ public class GenerateResource {
             config.save();
 
             File myFile = new File(git.getRepository().getDirectory().getParent(), "openapi-spec.json");
-            FileWriter fileWriter = new FileWriter(myFile);
-            PrintWriter printWriter = new PrintWriter(fileWriter);
-            try {
+            try (FileWriter fileWriter = new FileWriter(myFile)) {
+                PrintWriter printWriter = new PrintWriter(fileWriter);
                 printWriter.print(specification);
-            } finally {
                 printWriter.close();
-                fileWriter.close();
             }
 
             git.add().addFilepattern("openapi-spec.json").call();
@@ -114,12 +111,13 @@ public class GenerateResource {
         String alpha = "0123456789"
                 + "abcdefghijklmnopqrstuvxyz";
         StringBuilder sb = new StringBuilder(n);
+        SecureRandom r = new SecureRandom();
         for (int i = 0; i < n; i++) {
             // generate a random number between
             // 0 to alpha variable length
             int index
                     = (int) (alpha.length()
-                    * Math.random());
+                    * r.nextDouble());
             sb.append(alpha
                     .charAt(index));
         }
