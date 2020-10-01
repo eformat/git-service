@@ -28,11 +28,20 @@ public class GenerateResourceTest {
 
     @Test
     public void testGitServiceEndpoint() {
-        Assertions.assertEquals("failed", service.generate(new JsonObject()));
+        Assertions.assertEquals("done", service.generate(new JsonObject()));
+        Git git = mock(Git.class);
+        Ref ref = mock(Ref.class);
+        doNothing().when(git).close();
+        CheckoutCommand mockCheckoutCommand = mock(CheckoutCommand.class);
+        when(mockCheckoutCommand.setCreateBranch(anyBoolean())).thenReturn(mockCheckoutCommand);
+        when(mockCheckoutCommand.setName(anyString())).thenReturn(mockCheckoutCommand);
+        when(git.checkout()).thenReturn(mockCheckoutCommand);
         try {
+            when(mockCheckoutCommand.call()).thenReturn(ref);
+            service.git = git;
             service.createGitRepo(new JsonObject());
         } catch (Exception e) {
-            // expected
+            e.printStackTrace();
         }
     }
 

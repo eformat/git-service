@@ -42,6 +42,8 @@ public class GenerateResource {
     @ConfigProperty(name = "git.url")
     public String gitRepo;
 
+    protected Git git;
+
     @POST
     @Path("generate")
     @Produces(MediaType.TEXT_PLAIN)
@@ -68,11 +70,12 @@ public class GenerateResource {
             log.warn(e.getMessage());
         }
 
-        try (Git git = Git.cloneRepository()
-                .setURI(gitRepo)
-                .setDirectory(localPath)
-                .setCredentialsProvider(cp)
-                .call()) {
+        try {
+            git = Git.cloneRepository()
+                    .setURI(gitRepo)
+                    .setDirectory(localPath)
+                    .setCredentialsProvider(cp)
+                    .call();
 
             log.info("Cloned master repo: {}", git.getRepository().getDirectory());
 
@@ -105,6 +108,9 @@ public class GenerateResource {
             log.info("Committed: {}", commit.getId());
             git.push().setCredentialsProvider(cp).setRemote("origin").call();
             log.info("Pushed: {}", commit.getId());
+
+        } catch (Exception ex) {
+            log.warn(ex.getMessage());
         }
         FileUtils.deleteDirectory(localPath);
     }
