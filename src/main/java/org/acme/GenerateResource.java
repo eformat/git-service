@@ -13,6 +13,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.enterprise.context.ApplicationScoped;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -26,6 +27,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.security.SecureRandom;
 
+@ApplicationScoped
 @Path("/v1/api")
 public class GenerateResource {
 
@@ -107,7 +109,7 @@ public class GenerateResource {
         FileUtils.deleteDirectory(localPath);
     }
 
-    private String getAlphaNumericString(int n) {
+    protected String getAlphaNumericString(int n) {
         String alpha = "0123456789"
                 + "abcdefghijklmnopqrstuvxyz";
         StringBuilder sb = new StringBuilder(n);
