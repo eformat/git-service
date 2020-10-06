@@ -2,6 +2,7 @@ package org.acme;
 
 import io.vertx.core.json.JsonObject;
 import org.apache.commons.io.FileUtils;
+import org.eclipse.jgit.api.CloneCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.errors.ConfigInvalidException;
@@ -52,6 +53,7 @@ public class GenerateResource {
         log.info("{}", specification);
         try {
             createGitRepo(specification);
+            createGitDevBranch(specification);
         } catch (Exception e) {
             log.warn(e.getMessage());
             return "failed";
@@ -130,5 +132,67 @@ public class GenerateResource {
                     .charAt(index));
         }
         return sb.toString();
+    }
+
+    protected void createGitDevBranch(JsonObject specification) throws IOException, GitAPIException, URISyntaxException {
+        File localPath = File.createTempFile("dev", "");
+        Files.delete(localPath.toPath());
+
+        CredentialsProvider cp = new UsernamePasswordCredentialsProvider(gitUser, gitPassword);
+        try {
+            SystemReader.getInstance().getUserConfig().clear();
+        } catch (ConfigInvalidException e) {
+            log.warn(e.getMessage());
+        }
+
+        final String branchName = "dev";
+
+        try {
+            boolean isDevExist = Git
+                    .lsRemoteRepository()
+                    .setRemote(gitRepo)
+                    .setCredentialsProvider(cp)
+                    .callAsMap().containsKey("refs/heads/" + branchName);
+
+            CloneCommand cm = Git.cloneRepository()
+                    .setURI(gitRepo)
+                    .setDirectory(localPath)
+                    .setCredentialsProvider(cp);
+            git = isDevExist? cm.setBranch(branchName).call(): cm.call();
+
+            log.info("Cloned repo: {}", git.getRepository().getDirectory());
+            log.info("Git Branch URL: {}", gitRepo.replaceAll(".git", "") + "/src/" + branchName);
+
+            git.checkout()
+                    .setCreateBranch(!isDevExist)
+                    .setName(branchName)
+                    .call();
+
+            final StoredConfig config = git.getRepository().getConfig();
+            RemoteConfig remoteConfig = new RemoteConfig(config, "gogs");
+            URIish uri = new URIish(git.getRepository().getDirectory().toURI()
+                    .toURL());
+            remoteConfig.addURI(uri);
+            remoteConfig.addPushRefSpec(new RefSpec("HEAD:refs/heads/" + branchName));
+            remoteConfig.update(config);
+            config.save();
+
+            File myFile = new File(git.getRepository().getDirectory().getParent(), "openapi-spec.json");
+            try (FileWriter fileWriter = new FileWriter(myFile)) {
+                PrintWriter printWriter = new PrintWriter(fileWriter);
+                printWriter.print(specification);
+                printWriter.close();
+            }
+
+            git.add().addFilepattern("openapi-spec.json").call();
+            RevCommit commit = git.commit().setMessage("\uD83E\uDDA9 Initial commit \uD83E\uDDA9").call();
+            log.info("Committed: {}", commit.getId());
+            git.push().setCredentialsProvider(cp).setRemote("origin").call();
+            log.info("Pushed: {}", commit.getId());
+
+        } catch (Exception ex) {
+            log.warn(ex.getMessage());
+        }
+        FileUtils.deleteDirectory(localPath);
     }
 }
