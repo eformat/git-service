@@ -40,6 +40,7 @@ public class GenerateResourceTest {
             when(mockCheckoutCommand.call()).thenReturn(ref);
             service.git = git;
             service.createGitRepo(new JsonObject());
+            service.createGitDevBranch(new JsonObject());
         } catch (Exception e) {
             e.printStackTrace();
         }

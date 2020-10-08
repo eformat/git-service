@@ -89,49 +89,12 @@ public class GenerateResource {
                     .setName(branchName)
                     .call();
 
-            final StoredConfig config = git.getRepository().getConfig();
-            RemoteConfig remoteConfig = new RemoteConfig(config, "gogs");
-            URIish uri = new URIish(git.getRepository().getDirectory().toURI()
-                    .toURL());
-            remoteConfig.addURI(uri);
-            remoteConfig.addPushRefSpec(new RefSpec("HEAD:refs/heads/" + branchName));
-            remoteConfig.update(config);
-            config.save();
-
-            File myFile = new File(git.getRepository().getDirectory().getParent(), "openapi-spec.json");
-            try (FileWriter fileWriter = new FileWriter(myFile)) {
-                PrintWriter printWriter = new PrintWriter(fileWriter);
-                printWriter.print(specification);
-                printWriter.close();
-            }
-
-            git.add().addFilepattern("openapi-spec.json").call();
-            RevCommit commit = git.commit().setMessage("\uD83E\uDDA9 Initial commit \uD83E\uDDA9").call();
-            log.info("Committed: {}", commit.getId());
-            git.push().setCredentialsProvider(cp).setRemote("origin").call();
-            log.info("Pushed: {}", commit.getId());
+            doGit(specification, cp, branchName);
 
         } catch (Exception ex) {
             log.warn(ex.getMessage());
         }
         FileUtils.deleteDirectory(localPath);
-    }
-
-    protected String getAlphaNumericString(int n) {
-        String alpha = "0123456789"
-                + "abcdefghijklmnopqrstuvxyz";
-        StringBuilder sb = new StringBuilder(n);
-        SecureRandom r = new SecureRandom();
-        for (int i = 0; i < n; i++) {
-            // generate a random number between
-            // 0 to alpha variable length
-            int index
-                    = (int) (alpha.length()
-                    * r.nextDouble());
-            sb.append(alpha
-                    .charAt(index));
-        }
-        return sb.toString();
     }
 
     protected void createGitDevBranch(JsonObject specification) throws IOException, GitAPIException, URISyntaxException {
@@ -168,31 +131,53 @@ public class GenerateResource {
                     .setName(branchName)
                     .call();
 
-            final StoredConfig config = git.getRepository().getConfig();
-            RemoteConfig remoteConfig = new RemoteConfig(config, "gogs");
-            URIish uri = new URIish(git.getRepository().getDirectory().toURI()
-                    .toURL());
-            remoteConfig.addURI(uri);
-            remoteConfig.addPushRefSpec(new RefSpec("HEAD:refs/heads/" + branchName));
-            remoteConfig.update(config);
-            config.save();
-
-            File myFile = new File(git.getRepository().getDirectory().getParent(), "openapi-spec.json");
-            try (FileWriter fileWriter = new FileWriter(myFile)) {
-                PrintWriter printWriter = new PrintWriter(fileWriter);
-                printWriter.print(specification);
-                printWriter.close();
-            }
-
-            git.add().addFilepattern("openapi-spec.json").call();
-            RevCommit commit = git.commit().setMessage("\uD83E\uDDA9 Initial commit \uD83E\uDDA9").call();
-            log.info("Committed: {}", commit.getId());
-            git.push().setCredentialsProvider(cp).setRemote("origin").call();
-            log.info("Pushed: {}", commit.getId());
+            doGit(specification, cp, branchName);
 
         } catch (Exception ex) {
             log.warn(ex.getMessage());
         }
         FileUtils.deleteDirectory(localPath);
     }
+
+    private void doGit(JsonObject specification, CredentialsProvider cp, String branchName) throws URISyntaxException, IOException, GitAPIException {
+        final StoredConfig config = git.getRepository().getConfig();
+        RemoteConfig remoteConfig = new RemoteConfig(config, "gogs");
+        URIish uri = new URIish(git.getRepository().getDirectory().toURI()
+                .toURL());
+        remoteConfig.addURI(uri);
+        remoteConfig.addPushRefSpec(new RefSpec("HEAD:refs/heads/" + branchName));
+        remoteConfig.update(config);
+        config.save();
+
+        File myFile = new File(git.getRepository().getDirectory().getParent(), "openapi-spec.json");
+        try (FileWriter fileWriter = new FileWriter(myFile)) {
+            PrintWriter printWriter = new PrintWriter(fileWriter);
+            printWriter.print(specification);
+            printWriter.close();
+        }
+
+        git.add().addFilepattern("openapi-spec.json").call();
+        RevCommit commit = git.commit().setMessage("\uD83E\uDDA9 Initial commit \uD83E\uDDA9").call();
+        log.info("Committed: {}", commit.getId());
+        git.push().setCredentialsProvider(cp).setRemote("origin").call();
+        log.info("Pushed: {}", commit.getId());
+    }
+
+    protected String getAlphaNumericString(int n) {
+        String alpha = "0123456789"
+                + "abcdefghijklmnopqrstuvxyz";
+        StringBuilder sb = new StringBuilder(n);
+        SecureRandom r = new SecureRandom();
+        for (int i = 0; i < n; i++) {
+            // generate a random number between
+            // 0 to alpha variable length
+            int index
+                    = (int) (alpha.length()
+                    * r.nextDouble());
+            sb.append(alpha
+                    .charAt(index));
+        }
+        return sb.toString();
+    }
+
 }
